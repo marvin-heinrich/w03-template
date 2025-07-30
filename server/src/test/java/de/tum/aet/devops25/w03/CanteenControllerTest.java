@@ -56,12 +56,34 @@ public class CanteenControllerTest {
 
     @Test
     public void testGetTodayMeals_ReturnsNoContent_WhenNoMealsAvailable() throws Exception {
-         // TODO implement this test
+        // Mock the RestTemplate to return null (no data)
+        when(restTemplate.getForObject(anyString(), eq(Week.class))).thenReturn(null);
+
+        // Test the endpoint
+        List<Dish> result = getList("/{canteenName}/today", HttpStatus.NO_CONTENT, Dish.class, "mensa-garching");
+
+        // Verify null result (NO_CONTENT returns null from getList helper)
+        assertThat(result).isNull();
     }
 
     @Test
     public void testGetTodayMeals_ReturnsOkWithMeals() throws Exception {
-         // TODO implement this second test
+        // Create test data for today
+        LocalDate today = LocalDate.of(2025, 5, 8); // Matches our mocked clock
+        int weekNumber = today.get(WeekFields.of(Locale.getDefault()).weekOfWeekBasedYear());
+        int year = today.getYear();
+        Week testWeek = createTestData(today, weekNumber, year);
+
+        // Mock the RestTemplate to return the test data
+        when(restTemplate.getForObject(anyString(), eq(Week.class))).thenReturn(testWeek);
+
+        // Test the endpoint
+        List<Dish> result = getList("/{canteenName}/today", HttpStatus.OK, Dish.class, "mensa-garching");
+
+        // Verify the result contains today's meals
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).name()).isEqualTo("Vegetarian Pasta");
+        assertThat(result.get(1).name()).isEqualTo("Salad");
     }
 
     private <T> List<T> getList(String path, HttpStatus expectedStatus, Class<T> listElementType, Object... uriVariables) throws Exception {
